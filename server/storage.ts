@@ -1,6 +1,7 @@
-import { tasks, type Task, type InsertTask } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
+// server/storage.ts
+// DB-FREE storage (in-memory, no database)
+
+import type { Task, InsertTask } from "@shared/schema";
 
 export interface IStorage {
   getTasks(): Promise<Task[]>;
@@ -10,32 +11,43 @@ export interface IStorage {
   clearTasks(): Promise<void>;
 }
 
-export class DatabaseStorage implements IStorage {
+// simple in-memory store
+let tasks: Task[] = [];
+let idCounter = 1;
+
+export class MemoryStorage implements IStorage {
   async getTasks(): Promise<Task[]> {
-    return await db.select().from(tasks).orderBy(tasks.id);
+    return tasks;
   }
 
-  async createTask(insertTask: InsertTask): Promise<Task> {
-    const [task] = await db.insert(tasks).values(insertTask).returning();
-    return task;
+  async createTask(task: InsertTask): Promise<Task> {
+    const newTask: Task = {
+      id: idCounter++,
+      ...task,
+    };
+    tasks.push(newTask);
+    return newTask;
   }
 
-  async updateTask(id: number, updateData: Partial<InsertTask>): Promise<Task | undefined> {
-    const [task] = await db
-      .update(tasks)
-      .set(updateData)
-      .where(eq(tasks.id, id))
-      .returning();
-    return task;
+  async updateTask(
+    id: number,
+    updateData: Partial<InsertTask>
+  ): Promise<Task | undefined> {
+    const index = tasks.findIndex(t => t.id === id);
+    if (index === -1) return undefined;
+
+    tasks[index] = { ...tasks[index], ...updateData };
+    return tasks[index];
   }
 
   async deleteTask(id: number): Promise<void> {
-    await db.delete(tasks).where(eq(tasks.id, id));
+    tasks = tasks.filter(t => t.id !== id);
   }
 
   async clearTasks(): Promise<void> {
-    await db.delete(tasks);
+    tasks = [];
   }
 }
 
-export const storage = new DatabaseStorage();
+// export memory storage instead of DB
+export const storage = new MemoryStorage();
