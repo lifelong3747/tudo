@@ -59,10 +59,9 @@ export async function registerRoutes(
   // Seed data if empty
   const existing = await storage.getTasks();
   if (existing.length === 0) {
-    const today = new Date().toISOString().split('T')[0];
-    await storage.createTask({ text: "Electrostatics PYQs – 20 questions", completed: false, date: today });
-    await storage.createTask({ text: "Read Chapter 4 of History", completed: true, date: today });
-    await storage.createTask({ text: "Review Math formulas", completed: false, date: today });
+    await storage.createTask({ text: "Electrostatics PYQs – 20 questions", completed: false });
+    await storage.createTask({ text: "Read Chapter 4 of History", completed: true });
+    await storage.createTask({ text: "Review Math formulas", completed: false });
   }
 
   return httpServer;
